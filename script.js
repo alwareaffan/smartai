@@ -54,3 +54,72 @@ document.addEventListener("keydown", (event) => {
 if (new URLSearchParams(window.location.search).has("demo")) {
   window.setTimeout(openDemoModal, 100);
 }
+
+const pricingCounters = document.querySelectorAll("[data-pricing-counter]");
+const pricingControl = document.querySelector("[data-pricing-control]");
+
+function setPricingRate(value) {
+  pricingCounters.forEach((counter) => {
+    counter.textContent = `TZS ${value}`;
+  });
+}
+
+function completePricingAnimation(timerId) {
+  if (timerId) {
+    window.clearInterval(timerId);
+  }
+
+  setPricingRate(50);
+  document.body.classList.remove("price-rate-idle");
+  document.body.classList.remove("price-rate-animating");
+  document.body.classList.add("price-rate-ready");
+}
+
+if (pricingCounters.length) {
+  const startRate = 500;
+  const finalRate = 50;
+  const stepAmount = 10;
+  const stepDelay = 110;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let pricingTimer = 0;
+  let currentRate = startRate;
+
+  pricingCounters.forEach((counter) => {
+    counter.setAttribute("aria-live", "polite");
+  });
+
+  setPricingRate(startRate);
+
+  function startPricingAnimation() {
+    if (document.body.classList.contains("price-rate-ready")) return;
+    if (document.body.classList.contains("price-rate-animating")) return;
+
+    if (reduceMotion) {
+      completePricingAnimation(pricingTimer);
+      return;
+    }
+
+    document.body.classList.remove("price-rate-idle");
+    document.body.classList.add("price-rate-animating");
+    if (pricingControl) {
+      pricingControl.textContent = "Show actual price";
+    }
+
+    pricingTimer = window.setInterval(() => {
+      currentRate -= stepAmount;
+      setPricingRate(Math.max(currentRate, finalRate));
+
+      if (currentRate <= finalRate) {
+        completePricingAnimation(pricingTimer);
+      }
+    }, stepDelay);
+  }
+
+  pricingControl?.addEventListener("click", () => {
+    if (document.body.classList.contains("price-rate-animating")) {
+      completePricingAnimation(pricingTimer);
+    }
+  });
+
+  startPricingAnimation();
+}
